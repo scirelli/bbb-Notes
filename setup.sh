@@ -1,4 +1,9 @@
 #!/bin/bash
+# Execute as sudo
+
+set -e
+set -o xtrace
+set -o pipefail
 
 bulkStorageDevice=/dev/mmcblk0
 bulkStorageMntPnt=/media/sdcard
@@ -19,6 +24,7 @@ passwd --expire "$userName"
 echo alias=\'ls -lah\' > "$userHomes/$userName/.bash_aliases"
 usermod -a -G kmem,dialout,cdrom,floppy,audio,dip,video,plugdev,bluetooth,netdev,i2c,xenomai,tisdk,docker,iio,spi,remoteproc,eqep,pwm,gpio "$userName"
 ln -s "/media/sdcard/home/$userName" "/home/$userName"
+chown -h "$userName":"$userName" "/home/$userName"
 
 # == setup swap space
 swapon --show
@@ -43,7 +49,7 @@ cat /proc/sys/vm/swappiness
 
 
 # == pyenv
-apt-get update; sudo apt-get install make build-essential libssl-dev zlib1g-dev \
+apt-get update; apt-get install make build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 
