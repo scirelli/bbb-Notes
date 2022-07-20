@@ -21,7 +21,7 @@ mkdir --parents "$bulkStorageMntPnt"
 mount "$bulkStorageDevice" "$bulkStorageMntPnt"
 # Auto-mount after boot
 #       device-spec         mount-point    fs-type options dump pass
-echo "$bulkStorageDevice bulkStorageMntPnt ext4 defaults 0 2" >> /etc/fstab
+echo "$bulkStorageDevice bulkStorageMntPnt ext4 noatime,defaults 0 2" >> /etc/fstab
 mkdir --parents --verbose "$userHomes"
 useradd --create-home --shell /bin/bash --home "$userHomes/$userName" --password "$(perl -e "print crypt('temppwd','sa');")" "$userName"
 passwd --expire "$userName"
