@@ -13,6 +13,9 @@ userName='cck'
 /opt/scripts/tools/update_kernel.sh
 
 # == First time
+# Format the sdcard for ext4 (this will erase the sdcard.
+mkfs -t ext4 "$bulkStorageDevice"
+
 #Mount sdcard
 mkdir --parents "$bulkStorageMntPnt"
 mount "$bulkStorageDevice" "$bulkStorageMntPnt"
