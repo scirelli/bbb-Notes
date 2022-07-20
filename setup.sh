@@ -14,6 +14,7 @@ userName='cck'
 
 # == First time
 #Mount sdcard
+mkdir --parents "$bulkStorageMntPnt"
 mount "$bulkStorageDevice" "$bulkStorageMntPnt"
 # Auto-mount after boot
 #       device-spec         mount-point    fs-type options dump pass
