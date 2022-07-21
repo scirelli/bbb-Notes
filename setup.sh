@@ -10,7 +10,17 @@ bulkStorageMntPnt=/media/sdcard
 userHomes="$bulkStorageMntPnt/home"
 userName='cck'
 
-/opt/scripts/tools/update_kernel.sh
+if [ ! -f /home/debian/.setup_kernal ]; then
+    cd /opt/scripts
+    sudo -H -u debian bash -c 'git pull'
+    /opt/scripts/tools/update_kernel.sh
+    /opt/scripts/tools/version.sh
+    touch /home/debian/.setup_kernal
+    echo 'Run this script again.'
+    shutdown -r 1
+fi
+apt update
+apt upgrade -y
 
 # == First time
 # Format the sdcard for ext4 (this will erase the sdcard.
@@ -170,5 +180,10 @@ cd /tmp/vim || exit 1
 
 make && make install
 
+sudo apt install -y ti-tidl mjpg-streamer-opencv-python
+cd /var/lib/cloud9
+sudo -H -u debian bash -c 'git pull'
 echo 'Log into the cck use and run'
 echo 'env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" pyenv install 3.10.4 && pyenv global 3.10.4'
+
+rm -f /home/debian/.setup_kernal
