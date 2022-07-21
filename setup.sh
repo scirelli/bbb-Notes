@@ -18,14 +18,21 @@ mkfs -t ext4 "$bulkStorageDevice"
 
 #Mount sdcard
 mkdir --parents "$bulkStorageMntPnt"
+mkdir --parents "$bulkStorageMntPnt/tmp"
+chmod 777 "$bulkStorageMntPnt/tmp"
+chmod +t "$bulkStorageMntPnt/tmp"
 mount "$bulkStorageDevice" "$bulkStorageMntPnt"
+mount --bind "$bulkStorageMntPnt/tmp" /tmp
+findmnt /tmp
 # Auto-mount after boot
 #       device-spec         mount-point    fs-type options dump pass
-echo "$bulkStorageDevice bulkStorageMntPnt ext4 noatime,defaults 0 2" >> /etc/fstab
+echo "$bulkStorageDevice $bulkStorageMntPnt ext4 noatime,defaults 0 2" >> /etc/fstab
+echo "/media/sdcard/tmp /tmp none noatime,defaults,bind 0 2" >> /etc/fstab
 mkdir --parents --verbose "$userHomes"
 useradd --create-home --shell /bin/bash --home "$userHomes/$userName" --password "$(perl -e "print crypt('temppwd','sa');")" "$userName"
 passwd --expire "$userName"
-echo alias=\'ls -lah\' > "$userHomes/$userName/.bash_aliases"
+echo alias ll=\'ls -lah\' > "$userHomes/$userName/.bash_aliases"
+chown "$userName:$userName" "$userHomes/$userName/.bash_aliases"
 usermod -a -G kmem,dialout,cdrom,floppy,audio,dip,video,plugdev,bluetooth,netdev,i2c,xenomai,tisdk,docker,iio,spi,remoteproc,eqep,pwm,gpio "$userName"
 ln -s "/media/sdcard/home/$userName" "/home/$userName"
 chown -h "$userName":"$userName" "/home/$userName"
@@ -53,7 +60,7 @@ cat /proc/sys/vm/swappiness
 
 
 # == pyenv
-apt-get update; apt-get install make build-essential libssl-dev zlib1g-dev \
+apt-get update; apt-get install -y make build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 
@@ -61,6 +68,8 @@ sudo -H -u cck bash -c 'curl https://pyenv.run | bash'
 
 homedir=$( getent passwd "$userName" | cut -d: -f6 )
 cat << 'EOF' >> "$homedir/.bashrc"
+force_color_prompt=yes
+
 export EDITOR=vim
 export PYTHONBREAKPOINT=pudb.set_trace
 export PYTHON_VENV_DIR_NAME=.venv
@@ -71,8 +80,8 @@ eval "$(pyenv init --path)"
 eval "$(pyenv virtualenv-init -)"
 EOF
 
-runuser -l cck -c -- env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" pyenv install 3.10.4
-runuser -l cck -c -- pyenv global 3.10.4
+#runuser -l cck -c -- env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" pyenv install 3.10.4
+#runuser -l cck -c -- pyenv global 3.10.4
 #sudo -H -u cck bash -c 'pyenv install 3.10.4'
 #sudo -H -u cck bash -c 'pyenv global 3.10.4'
 
@@ -88,7 +97,7 @@ apt install -y build-essential gdb strace network-manager vim git wpasupplicant 
 
 
 # File sharing if you're not comfortable working through ssh and vim
-apt install samba
+apt install -y samba
 mkdir -p /home/cck/Projects
 mv /etc/samba/smb.conf /etc/samba/smb.conf.bak
 cat <<EOF > /etc/samba/smb.conf
@@ -160,3 +169,6 @@ cd /tmp/vim || exit 1
         --prefix=/usr
 EOF
 make && make install
+
+echo 'Log into the cck use and run'
+echo 'env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" pyenv install 3.10.4 && pyenv global 3.10.4'
