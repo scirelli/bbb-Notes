@@ -10,63 +10,81 @@ bulkStorageMntPnt=/media/sdcard
 userHomes="$bulkStorageMntPnt/home"
 userName='cck'
 
-if [ ! -f /home/debian/.setup_kernal ]; then
+if [ ! -f /home/debian/.setup_kernal1 ]; then
+    echo 'Updating Kernel.'
     cd /opt/scripts
     sudo -H -u debian bash -c 'git pull'
     /opt/scripts/tools/update_kernel.sh
     /opt/scripts/tools/version.sh
-    touch /home/debian/.setup_kernal
-    echo 'Run this script again.'
+    touch /home/debian/.setup_kernal1
+    echo 'Run this script again after reboot.'
     shutdown -r 1
 fi
+
+if [ ! -f /home/debian/.setup_kernal2 ]; then
+    # Turn off HDMI and audio out to enable more GPIO pins
+    echo Turn off HDMI and audio out to enable more GPIO pins
+    sed -i s/#disable_uboot_overlay_video=1/disable_uboot_overlay_video=1/g /boot/uEnv.txt
+    sed -i s/#disable_uboot_overlay_audio=1/disable_uboot_overlay_audio=1/g /boot/uEnv.txt
+    touch /home/debian/.setup_kernal2
+    echo 'Run this script again after reboot.'
+    shutdown -r 1
+fi
+
+echo 'configure P9_31 as PRU output'
+# This is okay to run multiple times.
+config-pin P9_31 pruout
+
 apt update
 apt upgrade -y
 
 # == First time
-# Format the sdcard for ext4 (this will erase the sdcard.
-mkfs -t ext4 "$bulkStorageDevice"
+if [ -b "$bulkStorageDevice" ]; then
+    # Format the sdcard for ext4 (this will erase the sdcard.
+    mkfs -t ext4 "$bulkStorageDevice"
 
-#Mount sdcard
-mkdir --parents "$bulkStorageMntPnt"
-mkdir --parents "$bulkStorageMntPnt/tmp"
-chmod 777 "$bulkStorageMntPnt/tmp"
-chmod +t "$bulkStorageMntPnt/tmp"
-mount "$bulkStorageDevice" "$bulkStorageMntPnt"
-mount --bind "$bulkStorageMntPnt/tmp" /tmp
-findmnt /tmp
-# Auto-mount after boot
-#       device-spec         mount-point    fs-type options dump pass
-echo "$bulkStorageDevice $bulkStorageMntPnt ext4 noatime,defaults 0 2" >> /etc/fstab
-echo "/media/sdcard/tmp /tmp none noatime,defaults,bind 0 2" >> /etc/fstab
-mkdir --parents --verbose "$userHomes"
-useradd --create-home --shell /bin/bash --home "$userHomes/$userName" --password "$(perl -e "print crypt('temppwd','sa');")" "$userName"
-passwd --expire "$userName"
-echo alias ll=\'ls -lah\' > "$userHomes/$userName/.bash_aliases"
-chown "$userName:$userName" "$userHomes/$userName/.bash_aliases"
-usermod -a -G kmem,dialout,cdrom,floppy,audio,dip,video,plugdev,bluetooth,netdev,i2c,xenomai,tisdk,docker,iio,spi,remoteproc,eqep,pwm,gpio "$userName"
-ln -s "/media/sdcard/home/$userName" "/home/$userName"
-chown -h "$userName":"$userName" "/home/$userName"
+    #Mount sdcard
+    mkdir --parents "$bulkStorageMntPnt"
+    mkdir --parents "$bulkStorageMntPnt/tmp"
+    chmod 777 "$bulkStorageMntPnt/tmp"
+    chmod +t "$bulkStorageMntPnt/tmp"
+    mount "$bulkStorageDevice" "$bulkStorageMntPnt"
+    mount --bind "$bulkStorageMntPnt/tmp" /tmp
+    findmnt /tmp
+    # Auto-mount after boot
+    #       device-spec         mount-point    fs-type options dump pass
+    echo "$bulkStorageDevice $bulkStorageMntPnt ext4 noatime,defaults 0 2" >> /etc/fstab
+    echo "/media/sdcard/tmp /tmp none noatime,defaults,bind 0 2" >> /etc/fstab
+    mkdir --parents --verbose "$userHomes"
+    useradd --create-home --shell /bin/bash --home "$userHomes/$userName" --password "$(perl -e "print crypt('temppwd','sa');")" "$userName"
+    passwd --expire "$userName"
+    echo alias ll=\'ls -lah\' > "$userHomes/$userName/.bash_aliases"
+    chown "$userName:$userName" "$userHomes/$userName/.bash_aliases"
+    usermod -a -G kmem,dialout,cdrom,floppy,audio,dip,video,plugdev,bluetooth,netdev,i2c,xenomai,tisdk,docker,iio,spi,remoteproc,eqep,pwm,gpio "$userName"
+    ln -s "/media/sdcard/home/$userName" "/home/$userName"
+    chown -h "$userName":"$userName" "/home/$userName"
 
-# == setup swap space
-swapon --show
-# There should be none on BBB
-swapfile=/media/sdcard/swapfile
-fallocate -l 1G "$swapfile"
-chmod 600 "$swapfile"
-mkswap "$swapfile"
-swapon "$swapfile"
-echo "$swapfile swap swap defaults 0 2" >> /etc/fstab
-cat /proc/sys/vm/swappiness
-# cat /proc/sys/vm/swappiness
-# set swap use to be low in
-# sysctl vm.swappiness=10
-# persist value in
-# vim /etc/sysctl.conf
+    # == setup swap space
+    swapon --show
+    # There should be none on BBB
+    swapfile=/media/sdcard/swapfile
+    fallocate -l 1G "$swapfile"
+    chmod 600 "$swapfile"
+    mkswap "$swapfile"
+    swapon "$swapfile"
+    echo "$swapfile swap swap defaults 0 2" >> /etc/fstab
+    cat /proc/sys/vm/swappiness
+    # cat /proc/sys/vm/swappiness
+    # set swap use to be low in
+    # sysctl vm.swappiness=10
+    # persist value in
+    # vim /etc/sysctl.conf
+    # == Turn swap off
+    # swapoff -v "$swapfile"
+    # rm "$swapfile"
+    # ## remove it from /etc/fstab
+fi
 
-# == Turn swap off
-# swapoff -v "$swapfile"
-# rm "$swapfile"
-# ## remove it from /etc/fstab
 
 
 # == pyenv
@@ -74,7 +92,7 @@ apt-get update; apt-get install -y make build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 
-sudo -H -u cck bash -c 'curl https://pyenv.run | bash'
+sudo -Hi -u cck bash -c 'curl https://pyenv.run | bash'
 
 homedir=$( getent passwd "$userName" | cut -d: -f6 )
 cat << 'EOF' >> "$homedir/.bashrc"
@@ -92,8 +110,7 @@ EOF
 
 #runuser -l cck -c -- env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" pyenv install 3.10.4
 #runuser -l cck -c -- pyenv global 3.10.4
-#sudo -H -u cck bash -c 'pyenv install 3.10.4'
-#sudo -H -u cck bash -c 'pyenv global 3.10.4'
+sudo -Hi -u cck bash -c 'env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" "$userHomes/$userName/.pyenv/bin/pyenv" install 3.10.4 && pyenv global 3.10.4'
 
 ## == WiFi setup
 # apt install -y linux-headers-4.19.94-ti-r73 dkms bc
@@ -180,10 +197,10 @@ cd /tmp/vim || exit 1
 
 make && make install
 
+# Updates based on BBB docs
 sudo apt install -y ti-tidl mjpg-streamer-opencv-python
 cd /var/lib/cloud9
 sudo -H -u debian bash -c 'git pull'
-echo 'Log into the cck use and run'
-echo 'env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" pyenv install 3.10.4 && pyenv global 3.10.4'
 
-rm -f /home/debian/.setup_kernal
+rm -f /home/debian/.setup_kernal1
+rm -f /home/debian/.setup_kernal2
