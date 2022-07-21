@@ -167,7 +167,7 @@ cd /tmp/vim || exit 1
         --with-python3-config-dir=/media/sdcard/home/cck/.pyenv/versions/3.10.4/lib/python3.10/config-3.10-arm-linux-gnueabihf \
         --enable-cscope \
         --prefix=/usr
-EOF
+
 make && make install
 
 echo 'Log into the cck use and run'
