@@ -63,6 +63,8 @@ if [ -b "$bulkStorageDevice" ]; then
     usermod -a -G kmem,dialout,cdrom,floppy,audio,dip,video,plugdev,bluetooth,netdev,i2c,xenomai,tisdk,docker,iio,spi,remoteproc,eqep,pwm,gpio "$userName"
     ln -s "/media/sdcard/home/$userName" "/home/$userName"
     chown -h "$userName":"$userName" "/home/$userName"
+    mkdir -p "/home/$userName/Projects"
+    chown "$userName":"$userName" "/home/$userName/Projects"
 
     # == setup swap space
     swapon --show
@@ -125,7 +127,7 @@ apt install -y build-essential gdb strace network-manager vim git wpasupplicant 
 
 # File sharing if you're not comfortable working through ssh and vim
 apt install -y samba
-mkdir -p /home/cck/Projects
+
 mv /etc/samba/smb.conf /etc/samba/smb.conf.bak
 cat <<EOF > /etc/samba/smb.conf
 #======================= Global Settings =======================
