@@ -124,6 +124,8 @@ sudo -Hi -u cck bash -c 'env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" "$
 # Install and update some packages
 apt install -y build-essential gdb strace network-manager vim git wpasupplicant sudo systemd screen gzip ca-certificates bluetooth apt xxd rsyslog openssl udev locales file git-man connman dbus distro-info-data clang libtool-bin libpython3-dev
 
+sudo -Hi -u cck bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash'
+#sudo -Hi -u cck bash -c 'nvm install node'  # "node" is an alias for the latest version
 
 # File sharing if you're not comfortable working through ssh and vim
 apt install -y samba
