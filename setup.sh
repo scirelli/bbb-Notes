@@ -45,10 +45,10 @@ if [ -b "$bulkStorageDevice" ]; then
 
     #Mount sdcard
     mkdir --parents "$bulkStorageMntPnt"
+    mount "$bulkStorageDevice" "$bulkStorageMntPnt"
     mkdir --parents "$bulkStorageMntPnt/tmp"
     chmod 777 "$bulkStorageMntPnt/tmp"
     chmod +t "$bulkStorageMntPnt/tmp"
-    mount "$bulkStorageDevice" "$bulkStorageMntPnt"
     mount --bind "$bulkStorageMntPnt/tmp" /tmp
     findmnt /tmp
     # Auto-mount after boot
@@ -112,7 +112,8 @@ EOF
 
 #runuser -l cck -c -- env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" pyenv install 3.10.4
 #runuser -l cck -c -- pyenv global 3.10.4
-sudo -Hi -u cck bash -c 'env PYTHON_CONFIGURE_OPTS="--enable-shared CC=clang" "$userHomes/$userName/.pyenv/bin/pyenv" install 3.10.4 && pyenv global 3.10.4'
+pyenv="$userHomes/$userName/.pyenv/bin/pyenv"
+sudo -Hi -u cck bash -c 'env PYTHON_CONFIGURE_OPTS="--enable-shared" "'$pyenv'" install 3.10.4 && "'$pyenv'" global 3.10.4'
 
 ## == WiFi setup
 # apt install -y linux-headers-4.19.94-ti-r73 dkms bc
